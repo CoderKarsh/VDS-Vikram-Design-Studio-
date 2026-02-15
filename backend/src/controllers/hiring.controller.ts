@@ -19,7 +19,7 @@ interface SubmitApplicationRequest extends Request {
  */
 export const submitApplication = async (
   req: SubmitApplicationRequest,
-  res: Response,
+  res: Response
 ) => {
   try {
     const { roleSlug, city } = req.body;
@@ -58,6 +58,21 @@ export const submitApplication = async (
     const applicantEmail = applicantData?.email || "";
 
     /* =========================
+       CREATE APPLICATION
+    ========================= */
+
+    const application = await JobApplication.create({
+      roleSlug,
+      city,
+      applicant: {
+        name: applicantName,
+        email: applicantEmail,
+      },
+      answers,
+      status: "submitted",
+    });
+
+    /* =========================
    CLOUDINARY FILE UPLOAD (AFTER CREATE)
 ========================= */
 
@@ -84,7 +99,7 @@ export const submitApplication = async (
             (error, result) => {
               if (error) return reject(error);
               resolve(result?.secure_url || "");
-            },
+            }
           );
 
           streamifier.createReadStream(file.buffer).pipe(stream);
@@ -96,23 +111,8 @@ export const submitApplication = async (
       await application.save();
     }
 
-    /* =========================
-       CREATE APPLICATION
-    ========================= */
-
-    const application = await JobApplication.create({
-      roleSlug,
-      city,
-      applicant: {
-        name: applicantName,
-        email: applicantEmail,
-      },
-      answers,
-      status: "submitted",
-    });
-
     console.log(
-      `New application: ${applicantName} <${applicantEmail}> for ${role.roleName} (${city})`,
+      `New application: ${applicantName} <${applicantEmail}> for ${role.roleName} (${city})`
     );
 
     /* =========================
@@ -174,10 +174,10 @@ export const getApplications = async (req: Request, res: Response) => {
     const applicationsWithRole = await Promise.all(
       applications.map(async (app: any) => {
         const role = await Role.findOne({ slug: app.roleSlug }).select(
-          "roleName",
+          "roleName"
         );
         return { ...app, roleName: role?.roleName };
-      }),
+      })
     );
 
     res.json({
@@ -251,7 +251,7 @@ export const updateApplicationStatus = async (req: Request, res: Response) => {
         notes,
         updatedAt: new Date(),
       },
-      { new: true },
+      { new: true }
     );
 
     if (!application) {
