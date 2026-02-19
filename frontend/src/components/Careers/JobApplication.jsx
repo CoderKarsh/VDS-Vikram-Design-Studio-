@@ -344,10 +344,11 @@ const JobApplication = ({ role }) => {
   return (
     <>
       {submitted && (
-        <div className="fixed top-0 left-0 w-full bg-green-600 text-white text-sm py-3 text-center z-50">
+        <div className="fixed top-0 left-0 w-full bg-[#d3ceca] text-black text-sm py-3 text-center z-50">
           Application submitted successfully. Redirecting…
         </div>
       )}
+
 
       <form
         onSubmit={handleSubmit}
