@@ -5,7 +5,6 @@ export const SiteSupervisorRole: RoleData = {
   slug: "site-supervisor",
   department: "Engineering",
 
-
   cities: {
     Kolkata: true,
     Guwahati: true,
@@ -237,8 +236,7 @@ export const SiteSupervisorRole: RoleData = {
       label: "Notice Period",
       type: "text",
       required: true,
-      placeholder:
-        "Enter your notice period in days. If not currently employed, write “Not Applicable”",
+      placeholder: " If not currently employed, write “Not Applicable”",
       section: "Additional Information",
     },
 
@@ -267,18 +265,32 @@ export const SiteSupervisorRole: RoleData = {
     /* 8. Declaration & Consent */
     {
       name: "declaration",
-      label: "Declaration of Information Accuracy",
+      label: "Please confirm your agreement to the following:",
       type: "checkbox",
       required: true,
-      options: ["I agree"],
+      options: [
+        "I hereby declare that all the information provided in this application is true, complete, and accurate to the best of my knowledge. I understand that any false information may result in disqualification or termination of employment.",
+      ],
       section: "Declaration & Consent",
     },
     {
       name: "dataConsent",
-      label: "Consent to Data Processing",
+      label: "",
       type: "checkbox",
       required: true,
-      options: ["I agree"],
+      options: [
+        "I consent to the processing of my personal data for recruitment purposes and understand that my information will be handled in accordance with applicable data protection laws.",
+      ],
+      section: "Declaration & Consent",
+    },
+    {
+      name: "assessmentConsent",
+      label: "Design & Technical Assessment:",
+      type: "checkbox",
+      required: true,
+      options: [
+        "I understand that if shortlisted, I will be required to complete a 24-hour design/technical assessment relevant to the Architect role as part of the selection process.",
+      ],
       section: "Declaration & Consent",
     },
   ],
