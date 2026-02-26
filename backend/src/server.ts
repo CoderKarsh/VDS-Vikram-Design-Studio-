@@ -41,7 +41,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-
       // Allow non-browser requests
       if (!origin) return callback(null, true);
 
@@ -138,7 +137,6 @@ app.use("*", (_req: Request, res: Response) =>
 // =============================
 
 const logMemoryUsage = () => {
-
   const used = process.memoryUsage();
 
   console.log("Memory Usage:", {
@@ -147,7 +145,6 @@ const logMemoryUsage = () => {
     heapUsed: `${Math.round(used.heapUsed / 1024 / 1024)} MB`,
     external: `${Math.round(used.external / 1024 / 1024)} MB`,
   });
-
 };
 
 // Every 5 minutes
@@ -165,9 +162,32 @@ if (global.gc) {
 // START SERVER
 // =============================
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📁 Uploads directory: ${uploadsPath}`);
   console.log(`🌐 Allowed CORS origins:`, allowedOrigins);
   logMemoryUsage();
 });
+
+// Increase server timeouts to accommodate larger file uploads and slow networks.
+// Default Node server timeout may close long-running requests; bump to 5 minutes.
+server.setTimeout(5 * 60 * 1000); // 5 minutes for socket inactivity
+
+// Increase headersTimeout so slow clients uploading large multipart bodies don't get cut off.
+// Headers timeout must be larger than server.timeout in some Node versions; add small buffer.
+if ((server as any).headersTimeout !== undefined) {
+  try {
+    (server as any).headersTimeout = 5 * 60 * 1000 + 10000; // 5m + 10s
+  } catch (e) {
+    // ignore if not supported
+  }
+}
+
+// KeepAlive timeout (milliseconds) — allow connections to remain for short periods.
+if ((server as any).keepAliveTimeout === undefined) {
+  // no-op
+} else {
+  try {
+    (server as any).keepAliveTimeout = 60 * 1000; // 60s
+  } catch (e) {}
+}
