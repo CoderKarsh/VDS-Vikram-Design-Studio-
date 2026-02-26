@@ -158,14 +158,13 @@ const FieldRenderer = ({
               target: {
                 name: field.name,
                 value: file,
-                type: "file"
-              }
+                type: "file",
+              },
             });
           }}
           className="border border-[#E3E1DF] rounded px-3 py-2 text-sm w-full"
         />
       );
-
 
     default:
       return <input type={field.type} {...commonProps} onChange={onChange} />;
@@ -317,20 +316,34 @@ const JobApplication = ({ role }) => {
     setLoading(true);
 
     try {
-      await jobApi.submitApplication({
-        roleSlug: slug,
-        city: selectedRoleCity, // ✅ REQUIRED FOR BACKEND
-        applicant: {
-          name: answers.fullName || answers.name || answers.firstName || "",
-          email: answers.email || answers.email_address || "",
-        },
-        answers,
-      });
+      // Build FormData for multipart upload (expected by backend)
+      const formData = new FormData();
+
+      formData.append("roleSlug", slug);
+      formData.append("city", selectedRoleCity);
+
+      const applicantObj = {
+        name: answers.fullName || answers.name || answers.firstName || "",
+        email: answers.email || answers.email_address || "",
+      };
+
+      formData.append("applicant", JSON.stringify(applicantObj));
+
+      // If there's a file in answers (cvFile), append it as 'cvFile' (multer expects this key)
+      if (answers.cvFile && answers.cvFile instanceof File) {
+        formData.append("cvFile", answers.cvFile, answers.cvFile.name);
+      }
+
+      // Append answers as JSON string (backend parses this)
+      formData.append("answers", JSON.stringify(answers));
+
+      await jobApi.submitApplication(formData);
 
       setSubmitted(true);
 
       setTimeout(() => navigate("/careers"), 5000);
     } catch (err) {
+      console.error(err);
       alert("Submission failed. Please try again.");
     } finally {
       setLoading(false);
@@ -348,7 +361,6 @@ const JobApplication = ({ role }) => {
           Application submitted successfully. Redirecting…
         </div>
       )}
-
 
       <form
         onSubmit={handleSubmit}
@@ -387,16 +399,17 @@ const JobApplication = ({ role }) => {
         <button
           type="submit"
           disabled={submitted || loading}
-          className={`px-8 py-3 rounded text-sm font-medium w-full md:w-auto ${submitted || loading
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-black text-white hover:bg-gray-800"
-            }`}
+          className={`px-8 py-3 rounded text-sm font-medium w-full md:w-auto ${
+            submitted || loading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-black text-white hover:bg-gray-800"
+          }`}
         >
           {submitted
             ? "Submitted!"
             : loading
-              ? "Submitting..."
-              : "Submit Application"}
+            ? "Submitting..."
+            : "Submit Application"}
         </button>
       </form>
     </>
