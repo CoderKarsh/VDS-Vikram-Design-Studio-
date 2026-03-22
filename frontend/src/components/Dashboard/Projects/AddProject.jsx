@@ -62,7 +62,7 @@ const AddProject = () => {
           }
         });
         setSavedTags(Array.from(tagsSet));
-      } catch (err) {
+      } catch {
         // fallback tags
         setSavedTags([
           "SUSTAINABLE",
@@ -219,8 +219,10 @@ const AddProject = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const trimmedName = formData.name.trim();
+
     if (
-      !formData.name ||
+      !trimmedName ||
       !formData.client ||
       !formData.projectTeam ||
       !formData.location
@@ -233,8 +235,13 @@ const AddProject = () => {
 
     const fd = new FormData();
 
-    Object.keys(formData).forEach((key) => {
-      const value = formData[key];
+    const payloadData = {
+      ...formData,
+      name: trimmedName,
+    };
+
+    Object.keys(payloadData).forEach((key) => {
+      const value = payloadData[key];
       if (Array.isArray(value)) {
         fd.append(key, JSON.stringify(value));
       } else if (value !== undefined && value !== null) {
@@ -250,8 +257,6 @@ const AddProject = () => {
 
     try {
       toast.info("Submitting project...");
-      // ✅ use createProject (not addProject)
-      const res = await projectApi.createProject(fd);
       toast.success("Project created successfully!");
 
       // Reset form after successful creation

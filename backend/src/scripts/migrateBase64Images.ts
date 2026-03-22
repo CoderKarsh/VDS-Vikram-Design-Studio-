@@ -68,7 +68,7 @@ async function migrateBase64Images(): Promise<MigrationStats> {
           try {
             const result = await convertBase64ToCloudinary(
               section.content,
-              `VDS_FOLDER/${project.name.replace(/[^a-zA-Z0-9]/g, '_')}`
+              `${config.cloudinary.folderName}/${project.name.replace(/[^a-zA-Z0-9]/g, '_')}`
             );
             
             updatedSections[i] = {

@@ -101,8 +101,7 @@ const EditProject = () => {
 
         setSections(sectionsWithKeys);
         setPreviewURL(project.previewImageUrl || null);
-      } catch (err) {
-        // console.error("Failed to fetch project:", err);
+      } catch {
         toast.error("Failed to fetch project details.", { autoClose: 3000 });
       }
     };
@@ -116,8 +115,7 @@ const EditProject = () => {
           (p.tags || []).forEach((tag) => tags.add(tag.toUpperCase()))
         );
         setSavedTags(Array.from(tags));
-      } catch (err) {
-        // console.error("Failed to fetch saved tags:", err);
+      } catch {
         // Fallback for demonstration if API fails:
         setSavedTags([
           "SUSTAINABLE",
@@ -241,8 +239,7 @@ const EditProject = () => {
         reader.onloadend = () => resolve(reader.result);
         reader.readAsDataURL(file);
       });
-    } catch (err) {
-      // console.error("File upload simulation failed:", err);
+    } catch {
       toast.error(
         "File upload failed. Please check the file size (max 900KB)."
       );
@@ -338,6 +335,12 @@ const EditProject = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
+      toast.error("Project name is required.");
+      return;
+    }
+
     const cleanSections = sections.map(({ type, content }) => ({
       type,
       content,
@@ -345,6 +348,7 @@ const EditProject = () => {
 
     const data = {
       ...formData,
+      name: trimmedName,
       sections: cleanSections,
       // WRITE FIX: Send 'lat' and 'lng' to the controller, which maps them to 'latitude'/'longitude'
       lat: formData.lat !== "" ? parseFloat(formData.lat) : null,

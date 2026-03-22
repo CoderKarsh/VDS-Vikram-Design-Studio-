@@ -41,7 +41,8 @@ export const updateHeading = async (req: Request, res: Response) => {
     const { content, lastModifiedBy } = req.body;
 
     if (content?.image && isBase64Image(content.image)) {
-      const folderBase = config.cloudinary.folderName || "VDS_FOLDER";
+      const folderBase =
+        config.cloudinary.folderName;
       const result = await convertBase64ToCloudinary(
         content.image,
         `${folderBase}/TEAM/HEADING`
@@ -71,7 +72,8 @@ export const updateMembers = async (req: Request, res: Response) => {
 
     for (const member of content) {
       if (member.photo && isBase64Image(member.photo)) {
-        const folderBase = config.cloudinary.folderName || "VDS_FOLDER";
+        const folderBase =
+          config.cloudinary.folderName;
         const result = await convertBase64ToCloudinary(
           member.photo,
           `${folderBase}/TEAM/MEMBERS`
@@ -104,7 +106,8 @@ export const updateMarquee = async (req: Request, res: Response) => {
 
     for (const img of content) {
       if (img.img_src && isBase64Image(img.img_src)) {
-        const folderBase = config.cloudinary.folderName || "VDS_FOLDER";
+        const folderBase =
+          config.cloudinary.folderName;
         const result = await convertBase64ToCloudinary(
           img.img_src,
           `${folderBase}/TEAM/MARQUEE`

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Project } from "../models/Project.model";
+import { config } from "../config/env"
 import cloudinary from "../config/cloudinary";
 import {
   isBase64Image,
@@ -36,6 +37,11 @@ export const createProject = async (req: Request, res: Response) => {
       lng,
     } = req.body;
 
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+    if (!trimmedName) {
+      return res.status(400).json({ message: "Project name is required" });
+    }
+
     const files = req.files as any;
 
     // ------------------- ADDED: normalize projectLeaders and tags -------------------
@@ -54,7 +60,7 @@ export const createProject = async (req: Request, res: Response) => {
     // -------------------------------------------------------------------------------
 
     // ------------------- ADDED: normalize project folder -------------------
-    const projectFolder = `VDS_FOLDER/${name
+    const projectFolder = `${config.cloudinary.folderName}/${trimmedName
       .replace(/[^a-zA-Z0-9]/g, "_")
       .toUpperCase()}`;
     // ----------------------------------------------------------------------
@@ -107,7 +113,7 @@ export const createProject = async (req: Request, res: Response) => {
     const count = await Project.countDocuments();
 
     const project = new Project({
-      name,
+      name: trimmedName,
       location,
       year,
       status: statusMap[status?.toUpperCase()] || status || "Design stage",
@@ -164,6 +170,11 @@ export const updateProject = async (req: Request, res: Response) => {
       lng,
     } = req.body as Record<string, any>;
 
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+    if (!trimmedName) {
+      return res.status(400).json({ message: "Project name is required" });
+    }
+
     const files = req.files as any;
 
     // ------------------- ADDED: normalize projectLeaders and tags -------------------
@@ -192,7 +203,7 @@ export const updateProject = async (req: Request, res: Response) => {
     if (previewImageUrl && isBase64Image(previewImageUrl)) {
       const result = await convertBase64ToCloudinary(
         previewImageUrl,
-        `VDS_FOLDER/${name.replace(/[^a-zA-Z0-9]/g, "_")}`,
+        `${config.cloudinary.folderName}/${trimmedName.replace(/[^a-zA-Z0-9]/g, "_")}`,
       );
       previewImageUrl = result.url;
       previewImagePublicId = result.publicId;
@@ -226,7 +237,7 @@ export const updateProject = async (req: Request, res: Response) => {
         if (sec.content && isBase64Image(sec.content)) {
           const result = await convertBase64ToCloudinary(
             sec.content,
-            `VDS_FOLDER/${name.replace(/[^a-zA-Z0-9]/g, "_")}`,
+            `${config.cloudinary.folderName}/${trimmedName.replace(/[^a-zA-Z0-9]/g, "_")}`,
           );
           return {
             type: sec.type || "image",
@@ -299,7 +310,7 @@ export const updateProject = async (req: Request, res: Response) => {
 
     // Merge update data
     Object.assign(updateData, {
-      name,
+      name: trimmedName,
       location,
       year,
       status:

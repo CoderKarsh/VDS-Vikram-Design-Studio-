@@ -15,7 +15,7 @@ export interface ImageUploadResult {
  */
 export async function convertBase64ToCloudinary(
   base64Data: string,
-  folder: string = "VDS_FOLDER"
+  folder: string = `${config.cloudinary.folderName}`
 ): Promise<ImageUploadResult> {
   try {
     // Ensure Cloudinary is configured
