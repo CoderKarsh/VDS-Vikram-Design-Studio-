@@ -284,7 +284,6 @@ const AddProject = () => {
         setPreviewFile(null);
       }
     } catch (err) {
-      console.error("Create project error:", err);
       const message =
         err?.response?.data?.message || "Failed to create project";
       toast.error(message);
