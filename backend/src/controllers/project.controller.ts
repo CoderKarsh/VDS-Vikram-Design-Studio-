@@ -462,23 +462,20 @@ export const deleteProject = async (req: Request, res: Response) => {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: "Project not found" });
 
-    const folderPrefix = project.previewImagePublicId
-      ? project.previewImagePublicId.split("/").slice(0, -1).join("/")
-      : null;
+    // Generate folder path from project name instead of relying on previewImagePublicId
+    const folderPrefix = generateProjectFolder(project.name);
 
-    if (folderPrefix) {
-      try {
-        await cloudinary.api.delete_resources_by_prefix(folderPrefix);
-        await cloudinary.api.delete_folder(folderPrefix);
-        console.log(
-          `✅ Deleted Cloudinary folder and all images: ${folderPrefix}`,
-        );
-      } catch (err) {
-        console.warn(
-          `⚠️ Failed to delete Cloudinary folder or its images: ${folderPrefix}`,
-          err,
-        );
-      }
+    try {
+      await cloudinary.api.delete_resources_by_prefix(folderPrefix);
+      await cloudinary.api.delete_folder(folderPrefix);
+      console.log(
+        `✅ Deleted Cloudinary folder and all images: ${folderPrefix}`,
+      );
+    } catch (err) {
+      console.warn(
+        `⚠️ Failed to delete Cloudinary folder or its images: ${folderPrefix}`,
+        err,
+      );
     }
 
     await Project.findByIdAndDelete(req.params.id);
