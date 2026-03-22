@@ -53,6 +53,50 @@ const renameCloudinaryFolder = async (
   }
 };
 
+const deleteCloudinaryResourcesByPrefix = async (
+  prefix: string,
+  resourceType: "image" | "video" | "raw",
+): Promise<void> => {
+  let nextCursor: string | undefined;
+
+  do {
+    const result = await cloudinary.api.delete_resources_by_prefix(prefix, {
+      resource_type: resourceType,
+      type: "upload",
+      next_cursor: nextCursor,
+      invalidate: true,
+    });
+
+    nextCursor = result.next_cursor;
+  } while (nextCursor);
+};
+
+const forceDeleteCloudinaryFolder = async (folderPath: string): Promise<void> => {
+  const subFolders = await cloudinary.api.sub_folders(folderPath).catch((error: any) => {
+    if (error?.error?.http_code === 404 || error?.http_code === 404) {
+      return { folders: [] };
+    }
+    throw error;
+  });
+
+  for (const subFolder of subFolders.folders || []) {
+    if (subFolder?.path) {
+      await forceDeleteCloudinaryFolder(subFolder.path);
+    }
+  }
+
+  await deleteCloudinaryResourcesByPrefix(folderPath, "image");
+  await deleteCloudinaryResourcesByPrefix(folderPath, "video");
+  await deleteCloudinaryResourcesByPrefix(folderPath, "raw");
+
+  await cloudinary.api.delete_folder(folderPath).catch((error: any) => {
+    if (error?.error?.http_code === 404 || error?.http_code === 404) {
+      return;
+    }
+    throw error;
+  });
+};
+
 // ---------------- CREATE PROJECT ----------------
 export const createProject = async (req: Request, res: Response) => {
   try {
@@ -466,8 +510,8 @@ export const deleteProject = async (req: Request, res: Response) => {
     const folderPrefix = generateProjectFolder(project.name);
 
     try {
-      await cloudinary.api.delete_resources_by_prefix(folderPrefix);
-      await cloudinary.api.delete_folder(folderPrefix);
+      await forceDeleteCloudinaryFolder(folderPrefix);
+      await cloudinary.api.delete_resources_by_prefix(folderPrefix)
       console.log(
         `✅ Deleted Cloudinary folder and all images: ${folderPrefix}`,
       );
