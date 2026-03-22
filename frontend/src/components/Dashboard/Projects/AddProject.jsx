@@ -257,6 +257,7 @@ const AddProject = () => {
 
     try {
       toast.info("Submitting project...");
+      await projectApi.createProject(fd);
       toast.success("Project created successfully!");
 
       // Reset form after successful creation
@@ -283,7 +284,7 @@ const AddProject = () => {
         setPreviewFile(null);
       }
     } catch (err) {
-      // console.error("Create project error:", err);
+      console.error("Create project error:", err);
       const message =
         err?.response?.data?.message || "Failed to create project";
       toast.error(message);
