@@ -15,6 +15,44 @@ const statusMap: Record<string, string> = {
   UNBUILT: "Unbuilt",
 };
 
+/**
+ * Helper function to generate Cloudinary folder path from project name
+ */
+const generateProjectFolder = (projectName: string): string => {
+  return `${config.cloudinary.folderName}/${projectName
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .toUpperCase()}`;
+};
+
+/**
+ * Helper function to rename a Cloudinary folder
+ */
+const renameCloudinaryFolder = async (
+  oldFolderPath: string,
+  newFolderPath: string
+): Promise<boolean> => {
+  try {
+    // Only rename if paths are different
+    if (oldFolderPath === newFolderPath) {
+      return true;
+    }
+
+    console.log(`🔄 Renaming Cloudinary folder: "${oldFolderPath}" -> "${newFolderPath}"`);
+    
+    await cloudinary.api.rename_folder(oldFolderPath, newFolderPath);
+    console.log(`✅ Cloudinary folder renamed successfully`);
+    return true;
+  } catch (error: any) {
+    // If folder doesn't exist, it's not an error (might be first update)
+    if (error.message && error.message.includes("doesn't exist")) {
+      console.warn(`⚠️ Old folder doesn't exist in Cloudinary: "${oldFolderPath}". This may be normal if no assets were uploaded yet.`);
+      return true;
+    }
+    console.error(`❌ Failed to rename Cloudinary folder:`, error);
+    throw error;
+  }
+};
+
 // ---------------- CREATE PROJECT ----------------
 export const createProject = async (req: Request, res: Response) => {
   try {
@@ -60,9 +98,7 @@ export const createProject = async (req: Request, res: Response) => {
     // -------------------------------------------------------------------------------
 
     // ------------------- ADDED: normalize project folder -------------------
-    const projectFolder = `${config.cloudinary.folderName}/${trimmedName
-      .replace(/[^a-zA-Z0-9]/g, "_")
-      .toUpperCase()}`;
+    const projectFolder = generateProjectFolder(trimmedName);
     // ----------------------------------------------------------------------
 
     let previewImageUrl =
@@ -170,10 +206,33 @@ export const updateProject = async (req: Request, res: Response) => {
       lng,
     } = req.body as Record<string, any>;
 
+    // Get existing project first to check for name changes
+    const existing = await Project.findById(req.params.id);
+    if (!existing)
+      return res.status(404).json({ message: "Project not found" });
+
     const trimmedName = typeof name === "string" ? name.trim() : "";
     if (!trimmedName) {
       return res.status(400).json({ message: "Project name is required" });
     }
+
+    // ------------------- ADDED: Check if project name changed and rename folder -------------------
+    const oldFolderPath = generateProjectFolder(existing.name);
+    const newFolderPath = generateProjectFolder(trimmedName);
+    
+    if (existing.name !== trimmedName) {
+      console.log(`📋 Project name changed: "${existing.name}" -> "${trimmedName}"`);
+      try {
+        await renameCloudinaryFolder(oldFolderPath, newFolderPath);
+      } catch (folderRenameError: any) {
+        console.error(`❌ Cloudinary folder rename failed:`, folderRenameError.message);
+        return res.status(500).json({
+          message: "Failed to rename project folder in Cloudinary",
+          error: folderRenameError.message,
+        });
+      }
+    }
+    // -----------------------------------------------
 
     const files = req.files as any;
 
@@ -203,7 +262,7 @@ export const updateProject = async (req: Request, res: Response) => {
     if (previewImageUrl && isBase64Image(previewImageUrl)) {
       const result = await convertBase64ToCloudinary(
         previewImageUrl,
-        `${config.cloudinary.folderName}/${trimmedName.replace(/[^a-zA-Z0-9]/g, "_")}`,
+        newFolderPath,
       );
       previewImageUrl = result.url;
       previewImagePublicId = result.publicId;
@@ -237,7 +296,7 @@ export const updateProject = async (req: Request, res: Response) => {
         if (sec.content && isBase64Image(sec.content)) {
           const result = await convertBase64ToCloudinary(
             sec.content,
-            `${config.cloudinary.folderName}/${trimmedName.replace(/[^a-zA-Z0-9]/g, "_")}`,
+            newFolderPath,
           );
           return {
             type: sec.type || "image",
@@ -271,9 +330,7 @@ export const updateProject = async (req: Request, res: Response) => {
       }),
     );
 
-    const existing = await Project.findById(req.params.id);
-    if (!existing)
-      return res.status(404).json({ message: "Project not found" });
+
 
     // Delete old preview if replaced
     if (
