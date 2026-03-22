@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import {config} from "../config/env"
 import cloudinary from "../config/cloudinary";
 import streamifier from "streamifier";
 import crypto from "crypto";
@@ -45,7 +46,7 @@ export const uploadToCloudinary = async (
       .slice(0, 50)
       .replace(/\s+/g, "_")
       .toUpperCase();
-    const folder = `VDS_FOLDER/${projectName}`;
+    const folder = `${config.cloudinary.folderName}/${projectName}`;
 
     // ------------------- Preview Image -------------------
     if (req.files && (req.files as any).previewImage) {

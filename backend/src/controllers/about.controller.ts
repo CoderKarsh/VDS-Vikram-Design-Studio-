@@ -5,6 +5,7 @@ import {
   convertBase64ToCloudinary,
 } from "../utils/imageProcessor";
 import { normalizeSections } from "../utils/normalizeAbout";
+import { config } from "../config/env";
 
 /* ---------- TYPES ---------- */
 type AboutParagraph = {
@@ -61,7 +62,7 @@ export const updateHero = async (req: Request, res: Response) => {
     if (hero.image && isBase64Image(hero.image)) {
       const result = await convertBase64ToCloudinary(
         hero.image,
-        "VDS_FOLDER/ABOUT/HERO"
+        `${config.cloudinary.folderName}/ABOUT/HERO`
       );
       hero.image = result.url;
     }
@@ -116,7 +117,7 @@ export const updateSections = async (req: Request, res: Response) => {
         .replace(/\s+/g, "_")
         .replace(/[^a-z0-9_]/g, "");
 
-      const folder = `VDS_FOLDER/ABOUT/SECTIONS/${folderName}`;
+      const folder = `${config.cloudinary.folderName}/ABOUT/SECTIONS/${folderName}`;
 
       for (const card of section.carousel_cards) {
         // ✅ Upload ONLY base64 images

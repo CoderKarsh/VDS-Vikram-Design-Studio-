@@ -1,5 +1,6 @@
 import multer from 'multer';
 import cloudinary from '../config/cloudinary';
+import { config } from '../config/env'
 import { v2 as cloudinaryUploader } from 'cloudinary';
 
 // Custom file interface for Cloudinary direct upload
@@ -17,7 +18,7 @@ const cloudinaryStorage = {
       const result = await new Promise((resolve, reject) => {
         const uploadStream = cloudinaryUploader.uploader.upload_stream(
           {
-            folder: 'VDS_FOLDER',
+            folder: `${config.cloudinary.folderName}`,
             resource_type: 'auto',
             quality: 'auto',
             fetch_format: 'auto',

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Project } from "../models/Project.model";
+import { config } from "../config/env"
 import cloudinary from "../config/cloudinary";
 import {
   isBase64Image,
@@ -12,6 +13,88 @@ const statusMap: Record<string, string> = {
   "DESIGN STAGE": "Design stage",
   COMPLETED: "Completed",
   UNBUILT: "Unbuilt",
+};
+
+/**
+ * Helper function to generate Cloudinary folder path from project name
+ */
+const generateProjectFolder = (projectName: string): string => {
+  return `${config.cloudinary.folderName}/${projectName
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .toUpperCase()}`;
+};
+
+/**
+ * Helper function to rename a Cloudinary folder
+ */
+const renameCloudinaryFolder = async (
+  oldFolderPath: string,
+  newFolderPath: string
+): Promise<boolean> => {
+  try {
+    // Only rename if paths are different
+    if (oldFolderPath === newFolderPath) {
+      return true;
+    }
+
+    console.log(`🔄 Renaming Cloudinary folder: "${oldFolderPath}" -> "${newFolderPath}"`);
+    
+    await cloudinary.api.rename_folder(oldFolderPath, newFolderPath);
+    console.log(`✅ Cloudinary folder renamed successfully`);
+    return true;
+  } catch (error: any) {
+    // If folder doesn't exist, it's not an error (might be first update)
+    if (error.message && error.message.includes("doesn't exist")) {
+      console.warn(`⚠️ Old folder doesn't exist in Cloudinary: "${oldFolderPath}". This may be normal if no assets were uploaded yet.`);
+      return true;
+    }
+    console.error(`❌ Failed to rename Cloudinary folder:`, error);
+    throw error;
+  }
+};
+
+const deleteCloudinaryResourcesByPrefix = async (
+  prefix: string,
+  resourceType: "image" | "video" | "raw",
+): Promise<void> => {
+  let nextCursor: string | undefined;
+
+  do {
+    const result = await cloudinary.api.delete_resources_by_prefix(prefix, {
+      resource_type: resourceType,
+      type: "upload",
+      next_cursor: nextCursor,
+      invalidate: true,
+    });
+
+    nextCursor = result.next_cursor;
+  } while (nextCursor);
+};
+
+const forceDeleteCloudinaryFolder = async (folderPath: string): Promise<void> => {
+  const subFolders = await cloudinary.api.sub_folders(folderPath).catch((error: any) => {
+    if (error?.error?.http_code === 404 || error?.http_code === 404) {
+      return { folders: [] };
+    }
+    throw error;
+  });
+
+  for (const subFolder of subFolders.folders || []) {
+    if (subFolder?.path) {
+      await forceDeleteCloudinaryFolder(subFolder.path);
+    }
+  }
+
+  await deleteCloudinaryResourcesByPrefix(folderPath, "image");
+  await deleteCloudinaryResourcesByPrefix(folderPath, "video");
+  await deleteCloudinaryResourcesByPrefix(folderPath, "raw");
+
+  await cloudinary.api.delete_folder(folderPath).catch((error: any) => {
+    if (error?.error?.http_code === 404 || error?.http_code === 404) {
+      return;
+    }
+    throw error;
+  });
 };
 
 // ---------------- CREATE PROJECT ----------------
@@ -36,6 +119,11 @@ export const createProject = async (req: Request, res: Response) => {
       lng,
     } = req.body;
 
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+    if (!trimmedName) {
+      return res.status(400).json({ message: "Project name is required" });
+    }
+
     const files = req.files as any;
 
     // ------------------- ADDED: normalize projectLeaders and tags -------------------
@@ -54,9 +142,7 @@ export const createProject = async (req: Request, res: Response) => {
     // -------------------------------------------------------------------------------
 
     // ------------------- ADDED: normalize project folder -------------------
-    const projectFolder = `VDS_FOLDER/${name
-      .replace(/[^a-zA-Z0-9]/g, "_")
-      .toUpperCase()}`;
+    const projectFolder = generateProjectFolder(trimmedName);
     // ----------------------------------------------------------------------
 
     let previewImageUrl =
@@ -107,7 +193,7 @@ export const createProject = async (req: Request, res: Response) => {
     const count = await Project.countDocuments();
 
     const project = new Project({
-      name,
+      name: trimmedName,
       location,
       year,
       status: statusMap[status?.toUpperCase()] || status || "Design stage",
@@ -164,6 +250,34 @@ export const updateProject = async (req: Request, res: Response) => {
       lng,
     } = req.body as Record<string, any>;
 
+    // Get existing project first to check for name changes
+    const existing = await Project.findById(req.params.id);
+    if (!existing)
+      return res.status(404).json({ message: "Project not found" });
+
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+    if (!trimmedName) {
+      return res.status(400).json({ message: "Project name is required" });
+    }
+
+    // ------------------- ADDED: Check if project name changed and rename folder -------------------
+    const oldFolderPath = generateProjectFolder(existing.name);
+    const newFolderPath = generateProjectFolder(trimmedName);
+    
+    if (existing.name !== trimmedName) {
+      console.log(`📋 Project name changed: "${existing.name}" -> "${trimmedName}"`);
+      try {
+        await renameCloudinaryFolder(oldFolderPath, newFolderPath);
+      } catch (folderRenameError: any) {
+        console.error(`❌ Cloudinary folder rename failed:`, folderRenameError.message);
+        return res.status(500).json({
+          message: "Failed to rename project folder in Cloudinary",
+          error: folderRenameError.message,
+        });
+      }
+    }
+    // -----------------------------------------------
+
     const files = req.files as any;
 
     // ------------------- ADDED: normalize projectLeaders and tags -------------------
@@ -192,7 +306,7 @@ export const updateProject = async (req: Request, res: Response) => {
     if (previewImageUrl && isBase64Image(previewImageUrl)) {
       const result = await convertBase64ToCloudinary(
         previewImageUrl,
-        `VDS_FOLDER/${name.replace(/[^a-zA-Z0-9]/g, "_")}`,
+        newFolderPath,
       );
       previewImageUrl = result.url;
       previewImagePublicId = result.publicId;
@@ -226,7 +340,7 @@ export const updateProject = async (req: Request, res: Response) => {
         if (sec.content && isBase64Image(sec.content)) {
           const result = await convertBase64ToCloudinary(
             sec.content,
-            `VDS_FOLDER/${name.replace(/[^a-zA-Z0-9]/g, "_")}`,
+            newFolderPath,
           );
           return {
             type: sec.type || "image",
@@ -260,9 +374,7 @@ export const updateProject = async (req: Request, res: Response) => {
       }),
     );
 
-    const existing = await Project.findById(req.params.id);
-    if (!existing)
-      return res.status(404).json({ message: "Project not found" });
+
 
     // Delete old preview if replaced
     if (
@@ -299,7 +411,7 @@ export const updateProject = async (req: Request, res: Response) => {
 
     // Merge update data
     Object.assign(updateData, {
-      name,
+      name: trimmedName,
       location,
       year,
       status:
@@ -394,23 +506,20 @@ export const deleteProject = async (req: Request, res: Response) => {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: "Project not found" });
 
-    const folderPrefix = project.previewImagePublicId
-      ? project.previewImagePublicId.split("/").slice(0, -1).join("/")
-      : null;
+    // Generate folder path from project name instead of relying on previewImagePublicId
+    const folderPrefix = generateProjectFolder(project.name);
 
-    if (folderPrefix) {
-      try {
-        await cloudinary.api.delete_resources_by_prefix(folderPrefix);
-        await cloudinary.api.delete_folder(folderPrefix);
-        console.log(
-          `✅ Deleted Cloudinary folder and all images: ${folderPrefix}`,
-        );
-      } catch (err) {
-        console.warn(
-          `⚠️ Failed to delete Cloudinary folder or its images: ${folderPrefix}`,
-          err,
-        );
-      }
+    try {
+      await forceDeleteCloudinaryFolder(folderPrefix);
+      await cloudinary.api.delete_resources_by_prefix(folderPrefix)
+      console.log(
+        `✅ Deleted Cloudinary folder and all images: ${folderPrefix}`,
+      );
+    } catch (err) {
+      console.warn(
+        `⚠️ Failed to delete Cloudinary folder or its images: ${folderPrefix}`,
+        err,
+      );
     }
 
     await Project.findByIdAndDelete(req.params.id);
