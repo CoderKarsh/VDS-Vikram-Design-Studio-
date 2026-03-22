@@ -366,6 +366,7 @@ const EditProject = () => {
     }
 
     try {
+      toast.info("Updating project...")
       await projectApi.updateProject(id, data);
       toast.success("Project updated successfully! 🎉", {
         position: "top-center",
