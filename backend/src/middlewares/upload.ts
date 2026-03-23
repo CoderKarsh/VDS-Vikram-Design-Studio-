@@ -15,10 +15,19 @@ interface CloudinaryFile extends Express.Multer.File {
 const cloudinaryStorage = {
   _handleFile: async (req: any, file: any, cb: any) => {
     try {
+      const projectName =
+        typeof req?.body?.name === 'string' && req.body.name.trim()
+          ? req.body.name.trim()
+          : 'UNKNOWN_PROJECT';
+
+      const projectFolder = `${config.cloudinary.folderName}/${projectName
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .toUpperCase()}`;
+
       const result = await new Promise((resolve, reject) => {
         const uploadStream = cloudinaryUploader.uploader.upload_stream(
           {
-            folder: `${config.cloudinary.folderName}`,
+            folder: projectFolder,
             resource_type: 'auto',
             quality: 'auto',
             fetch_format: 'auto',
