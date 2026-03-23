@@ -389,20 +389,26 @@ export const updateProject = async (req: Request, res: Response) => {
       }
     }
 
-    // Delete replaced section images
-    for (
-      let i = 0;
-      i < Math.max(existing.sections.length, updatedSections.length);
-      i++
-    ) {
-      const oldSec = existing.sections[i];
-      const newSec = updatedSections[i];
-      if (oldSec?.publicId && (!newSec || newSec.content !== oldSec.content)) {
+    // Delete only sections removed from payload (safe set-diff by publicId)
+    const oldSectionPublicIds = new Set(
+      existing.sections
+        .map((section: any) => section?.publicId)
+        .filter((id: string | undefined): id is string => Boolean(id)),
+    );
+
+    const newSectionPublicIds = new Set(
+      updatedSections
+        .map((section: any) => section?.publicId)
+        .filter((id: string | undefined): id is string => Boolean(id)),
+    );
+
+    for (const oldPublicId of oldSectionPublicIds) {
+      if (!newSectionPublicIds.has(oldPublicId)) {
         try {
-          await cloudinary.uploader.destroy(oldSec.publicId);
+          await cloudinary.uploader.destroy(oldPublicId);
         } catch (e) {
           console.warn(
-            `⚠️ Failed to delete old section image at index ${i}:`,
+            `⚠️ Failed to delete removed section image with publicId ${oldPublicId}:`,
             e,
           );
         }

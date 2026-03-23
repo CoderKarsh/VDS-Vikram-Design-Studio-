@@ -341,9 +341,10 @@ const EditProject = () => {
       return;
     }
 
-    const cleanSections = sections.map(({ type, content }) => ({
+    const cleanSections = sections.map(({ type, content, publicId }) => ({
       type,
       content,
+      ...(publicId ? { publicId } : {}),
     }));
 
     const data = {
