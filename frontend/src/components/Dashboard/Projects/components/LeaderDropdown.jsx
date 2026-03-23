@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 
 const LeaderDropdown = ({
   options,
@@ -7,8 +7,26 @@ const LeaderDropdown = ({
   show,
   setShow,
 }) => {
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShow(false);
+      }
+    };
+
+    if (show) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [show, setShow]);
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <div
         className="border p-2 rounded w-full border-[#C9BEB8] cursor-pointer bg-white"
         onClick={() => setShow(!show)}
