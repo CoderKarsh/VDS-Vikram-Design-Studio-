@@ -28,6 +28,8 @@ const AddProject = () => {
     keyDate: new Date().toISOString().slice(0, 10),
     previewImageUrl: "",
     sizeM2FT2: "",
+    lat: "",
+    lng: "",
   });
 
   // ---- Sections (text/image/gif) ----
@@ -276,6 +278,8 @@ const AddProject = () => {
         keyDate: new Date().toISOString().slice(0, 10),
         previewImageUrl: "",
         sizeM2FT2: "",
+        lat: "",
+        lng: "",
       });
       setSections([]);
       if (previewURL) {

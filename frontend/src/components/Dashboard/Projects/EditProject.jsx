@@ -14,6 +14,7 @@ import {
   TAG_OPTIONS,
   STATES_AND_UTS,
 } from "./constants";
+import MandatoryFields from "./components/MandatoryFields";
 
 const EditProject = () => {
   const { id } = useParams();
@@ -136,11 +137,6 @@ const EditProject = () => {
     setSelectedCategory(category);
     setAvailableSubCategories(filterOptions[category] || []);
     setFormData((prev) => ({ ...prev, category, subCategory: "" }));
-  };
-
-  const handleSubCategoryChange = (e) => {
-    const subCategory = e.target.value.toUpperCase();
-    setFormData((prev) => ({ ...prev, subCategory }));
   };
 
   const handleChange = (e) => {
@@ -394,200 +390,18 @@ const EditProject = () => {
         className="bg-white border rounded p-6 flex flex-col gap-6"
       >
         <div className="grid grid-cols-2 gap-6 items-start">
-          <div className="flex flex-col gap-4">
-            <h2 className="font-bold text-lg text-[#454545]">
-              1. Mandatory Fields
-            </h2>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Project Name *"
-              className="border p-2 rounded w-full border-[#C9BEB8]"
-              autoComplete="off"
-              required
+          <div>
+            <MandatoryFields
+              formData={formData}
+              handleChange={handleChange}
+              handleCategoryChange={handleCategoryChange}
+              selectedCategory={selectedCategory}
+              availableSubCategories={availableSubCategories}
+              handleLeaderToggle={handleLeaderToggle}
+              showLeaderDropdown={showLeaderDropdown}
+              setShowLeaderDropdown={setShowLeaderDropdown}
+              PROJECT_LEADERS_OPTIONS={PROJECT_LEADERS_OPTIONS}
             />
-            <select
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              className="border p-2 rounded w-full border-[#C9BEB8]"
-              required
-            >
-              <option value="">Select State/UT *</option>
-              {STATES_AND_UTS.map((state) => (
-                <option key={state} value={state}>
-                  {state}
-                </option>
-              ))}
-            </select>
-
-            {/* Latitude and Longitude Inputs */}
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="number"
-                name="lat"
-                value={formData.lat}
-                onChange={handleChange}
-                placeholder="Latitude (e.g., 23.82)"
-                className="border p-2 rounded w-full border-[#C9BEB8]"
-                step="any"
-                min="-90"
-                max="90"
-                autoComplete="off"
-              />
-              <input
-                type="number"
-                name="lng"
-                value={formData.lng}
-                onChange={handleChange}
-                placeholder="Longitude (e.g., 91.27)"
-                className="border p-2 rounded w-full border-[#C9BEB8]"
-                step="any"
-                min="-180"
-                max="180"
-                autoComplete="off"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                name="category"
-                value={selectedCategory}
-                onChange={handleCategoryChange}
-                className="border p-2 rounded w-full border-[#C9BEB8]"
-                required
-              >
-                <option value="">Select Category *</option>
-                {TAG_OPTIONS.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="subCategory"
-                value={formData.subCategory}
-                onChange={handleSubCategoryChange} // ✅ use separate handler
-                className="border p-2 rounded w-full border-[#C9BEB8]"
-                disabled={!availableSubCategories.length}
-              >
-                <option value="">Select Sub-Category</option>
-                {availableSubCategories.map((sub) => (
-                  <option key={sub} value={sub}>
-                    {sub}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <input
-              type="text"
-              name="client"
-              value={formData.client}
-              onChange={handleChange}
-              placeholder="Client *"
-              className="border p-2 rounded w-full border-[#C9BEB8]"
-              autoComplete="off"
-              required
-            />
-            <input
-              type="text"
-              name="sizeM2FT2"
-              value={formData.sizeM2FT2}
-              onChange={handleChange}
-              placeholder="Size (M2/FT2)"
-              className="border p-2 rounded w-full border-[#C9BEB8]"
-              autoComplete="off"
-            />
-
-            <input
-              type="text"
-              name="collaborators"
-              value={formData.collaborators}
-              onChange={handleChange}
-              placeholder="Collaborators *"
-              className="border p-2 rounded w-full border-[#C9BEB8]"
-              autoComplete="off"
-              required
-            />
-            {/* Project Leader Dropdown */}
-            <div className="relative">
-              <div
-                className="border p-2 rounded w-full border-[#C9BEB8] cursor-pointer bg-white"
-                onClick={() => setShowLeaderDropdown(!showLeaderDropdown)}
-              >
-                {formData.projectLeaders.length > 0
-                  ? formData.projectLeaders.join(", ")
-                  : "Select Project Leader(s) *"}
-              </div>
-              {showLeaderDropdown && (
-                <div className="absolute z-10 w-full bg-white border rounded shadow-lg max-h-40 overflow-y-auto">
-                  {PROJECT_LEADERS_OPTIONS.map((leader) => (
-                    <div
-                      key={leader}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        handleLeaderToggle(leader);
-                      }}
-                      className={`p-2 cursor-pointer text-sm flex justify-between items-center ${
-                        formData.projectLeaders.includes(leader)
-                          ? "bg-[#F1E4DF] font-semibold"
-                          : "hover:bg-gray-100"
-                      }`}
-                    >
-                      {leader}
-                      {formData.projectLeaders.includes(leader) && (
-                        <span className="text-[#722F37] text-xl">✓</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              <input
-                type="hidden"
-                name="projectLeaders"
-                value={formData.projectLeaders.join(",")}
-                required={formData.projectLeaders.length === 0}
-              />
-            </div>
-
-            <input
-              type="text"
-              name="projectTeam"
-              value={formData.projectTeam}
-              onChange={handleChange}
-              placeholder="Project Team *"
-              className="border p-2 rounded w-full border-[#C9BEB8]"
-              autoComplete="off"
-              required
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="border p-2 rounded w-full border-[#C9BEB8]"
-                required
-              >
-                <option value="">SELECT STATUS *</option>
-                {/* Placeholder option */}
-                <option value="ON-SITE">ON-SITE</option>
-                <option value="DESIGN STAGE">DESIGN STAGE</option>
-                <option value="COMPLETED">COMPLETED</option>
-                <option value="UNBUILT">UNBUILT</option>
-              </select>
-
-              <input
-                type="number"
-                name="year"
-                value={formData.year}
-                onChange={handleChange}
-                placeholder="Year *"
-                className="border p-2 rounded w-full border-[#C9BEB8]"
-                required
-              />
-            </div>
           </div>
 
           {/* Preview Upload - Aligned Style */}

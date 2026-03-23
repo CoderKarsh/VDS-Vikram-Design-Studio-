@@ -1,6 +1,6 @@
 import React from "react";
 import LeaderDropdown from "./LeaderDropdown";
-import { TAG_OPTIONS, STATES_AND_UTS } from "../constants";
+import { TAG_OPTIONS, STATES_AND_UTS, PROJECT_STATUS_OPTIONS } from "../constants";
 
 const MandatoryFields = ({
   formData,
@@ -23,6 +23,7 @@ const MandatoryFields = ({
       onChange={handleChange}
       placeholder="Project Name *"
       className="border p-2 rounded w-full border-[#C9BEB8]"
+      autoComplete="off"
       required
     />
 
@@ -41,26 +42,70 @@ const MandatoryFields = ({
       ))}
     </select>
 
+    {/* Year and Status Fields */}
+    <div className="grid grid-cols-2 gap-2">
+      <input
+        type="number"
+        name="year"
+        value={formData.year}
+        onChange={handleChange}
+        placeholder="Year"
+        className="border p-2 rounded w-full border-[#C9BEB8]"
+        required
+      />
+
+      <select
+        name="status"
+        value={formData.status}
+        onChange={handleChange}
+        className="border p-2 rounded w-full border-[#C9BEB8]"
+      >
+        <option value="">SELECT STATUS *</option>
+        {PROJECT_STATUS_OPTIONS.map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Size Field */}
+    <input
+      type="text"
+      name="sizeM2FT2"
+      value={formData.sizeM2FT2}
+      onChange={handleChange}
+      placeholder="Size (M2/FT2)"
+      className="border p-2 rounded w-full border-[#C9BEB8]"
+      autoComplete="off"
+    />
+
     {/* Latitude and Longitude Fields */}
     <div className="grid grid-cols-2 gap-2">
       <input
         type="number"
-        name="latitude"
-        value={formData.latitude}
+        name="lat"
+        value={formData.lat}
         onChange={handleChange}
-        placeholder="Latitude"
+        placeholder="Latitude (e.g., 23.82)"
         step="any"
+        min="-90"
+        max="90"
         className="border p-2 rounded w-full border-[#C9BEB8]"
+        autoComplete="off"
       />
 
       <input
         type="number"
-        name="longitude"
-        value={formData.longitude}
+        name="lng"
+        value={formData.lng}
         onChange={handleChange}
-        placeholder="Longitude"
+        placeholder="Longitude (e.g., 91.27)"
         step="any"
+        min="-180"
+        max="180"
         className="border p-2 rounded w-full border-[#C9BEB8]"
+        autoComplete="off"
       />
     </div>
 
@@ -103,6 +148,7 @@ const MandatoryFields = ({
       onChange={handleChange}
       placeholder="Client *"
       className="border p-2 rounded w-full border-[#C9BEB8]"
+      autoComplete="off"
       required
     />
 
@@ -113,6 +159,7 @@ const MandatoryFields = ({
       onChange={handleChange}
       placeholder="Collaborators *"
       className="border p-2 rounded w-full border-[#C9BEB8]"
+      autoComplete="off"
       required
     />
 
@@ -131,6 +178,7 @@ const MandatoryFields = ({
       onChange={handleChange}
       placeholder="Project Team *"
       className="border p-2 rounded w-full border-[#C9BEB8]"
+      autoComplete="off"
       required
     />
   </div>

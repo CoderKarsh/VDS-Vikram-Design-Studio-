@@ -6,6 +6,13 @@ export const PROJECT_LEADERS_OPTIONS = [
   "NAMMAN SHROFF",
 ];
 
+export const PROJECT_STATUS_OPTIONS = [
+  "ON-SITE",
+  "DESIGN STAGE",
+  "COMPLETED",
+  "UNBUILT",
+];
+
 export const filterOptions = {
   EDUCATION: [
     "SCHOOLS",
